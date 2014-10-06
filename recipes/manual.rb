@@ -50,7 +50,22 @@ if conf['enable_default_http']
       'default_backend' => 'servers-http'
     })
   end
+elsif node['haproxy']['enable_ssl'] || node['haproxy']['ssl_termination']
+  ssl_string  = ""
+  ssl_string << " ssl crt #{ node['haproxy']['ssl_termination_pem_file'] }" if node['haproxy']['ssl_termination']
 
+  haproxy_lb 'https' do
+    type 'frontend'
+    mode 'tcp'
+    params({
+      'maxconn' => node['haproxy']['frontend_ssl_max_connections'],
+      'bind' => "#{node['haproxy']['ssl_incoming_address']}:#{node['haproxy']['ssl_incoming_port']}#{ ssl_string }",
+      'default_backend' => ('servers-http' + ( 's' unless node['haproxy']['ssl_termination'] ))
+    })
+  end
+end
+
+if conf['enable_default_http'] || node['haproxy']['ssl_termination']
   member_port = conf['member_port']
   pool = []
   pool << "option httpchk #{conf['httpchk']}" if conf['httpchk']
@@ -62,20 +77,8 @@ if conf['enable_default_http']
     servers servers
     params pool
   end
-end
 
-
-if node['haproxy']['enable_ssl']
-  haproxy_lb 'https' do
-    type 'frontend'
-    mode 'tcp'
-    params({
-      'maxconn' => node['haproxy']['frontend_ssl_max_connections'],
-      'bind' => "#{node['haproxy']['ssl_incoming_address']}:#{node['haproxy']['ssl_incoming_port']}",
-      'default_backend' => 'servers-https'
-    })
-  end
-
+elsif node['haproxy']['enable_ssl']
   ssl_member_port = conf['ssl_member_port']
   pool = ['option ssl-hello-chk']
   pool << "option httpchk #{conf['ssl_httpchk']}" if conf['ssl_httpchk']

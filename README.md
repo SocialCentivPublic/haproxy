@@ -36,7 +36,9 @@ Attributes
 - `node['haproxy']['member_weight']` - the weight to apply to member systems if not otherwise specified in the members attribute, default 1
 - `node['haproxy']['app_server_role']` - used by the `app_lb` recipe to search for a specific role of member systems. Default `webserver`.
 - `node['haproxy']['balance_algorithm']` - sets the load balancing algorithm; defaults to roundrobin.
-- `node['haproxy']['enable_ssl']` - whether or not to create listeners for ssl, default false
+- `node['haproxy']['enable_ssl']` - whether or not to create listeners for ssl, default false. Enables SSL for both frontends and backends.
+- `node['haproxy']['ssl_termination']` - whether or not to have the haproxy node be a SSL terminator. If this is activated the backends do not need to be on an https connection.
+- `node['haproxy']['ssl_termination_pem_file']` - The location of the pem file to use to terminate SSL. <b> Must be provided if using SSL termination. </b>
 - `node['haproxy']['ssl_incoming_address']` - sets the address to bind the haproxy on for SSL, 0.0.0.0 (all addresses) by default
 - `node['haproxy']['ssl_member_port']` - the port that member systems will be listening on for ssl, default 8443
 - `node['haproxy']['ssl_incoming_port']` - sets the port on which haproxy listens for ssl, default 443
