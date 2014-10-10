@@ -8,6 +8,7 @@ action :create do
   listener << "balance #{new_resource.balance}" unless new_resource.balance.nil?
   listener << "mode #{new_resource.mode}" unless new_resource.mode.nil?
   listener += new_resource.servers.map {|server| "server #{server}" }
+  listener += new_resource.stats.map {|stat| "stats #{stat}" }
 
   if new_resource.params.is_a? Hash
     listener += new_resource.params.map { |k,v| "#{k} #{v}" }

@@ -37,7 +37,7 @@ Attributes
 - `node['haproxy']['app_server_role']` - used by the `app_lb` recipe to search for a specific role of member systems. Default `webserver`.
 - `node['haproxy']['balance_algorithm']` - sets the load balancing algorithm; defaults to roundrobin.
 - `node['haproxy']['enable_ssl']` - whether or not to create listeners for ssl, default false. Enables SSL for both frontends and backends.
-- `node['haproxy']['ssl_termination']` - whether or not to have the haproxy node be a SSL terminator. If this is activated the backends do not need to be on an https connection.
+- `node['haproxy']['ssl_termination']` - whether or not to have the haproxy node be a SSL terminator. If this is activated the backends do not need to be on an https connection. <b> Only works with haproxy 1.5.4 or later.</b>
 - `node['haproxy']['ssl_termination_pem_file']` - The location of the pem file to use to terminate SSL. <b> Must be provided if using SSL termination. </b>
 - `node['haproxy']['ssl_incoming_address']` - sets the address to bind the haproxy on for SSL, 0.0.0.0 (all addresses) by default
 - `node['haproxy']['ssl_member_port']` - the port that member systems will be listening on for ssl, default 8443
@@ -48,6 +48,8 @@ Attributes
 - `node['haproxy']['admin']['address_bind']` - sets the address to bind the administrative interface on, 127.0.0.1 by default
 - `node['haproxy']['admin']['port']` - sets the port for the administrative interface, 22002 by default
 - `node['haproxy']['admin']['options']` - sets extras config parameters on the administrative interface, 'stats uri /' by default
+- `node['haproxy']['admin']['username']` - the http basic auth username to access admin console in https
+- `node['haproxy']['admin']['password']` - the http basic auth password to access admin console in https
 - `node['haproxy']['enable_stats_socket']` - controls haproxy socket creation, false by default
 - `node['haproxy']['stats_socket_path']` - location of haproxy socket, "/var/run/haproxy.sock" by default
 - `node['haproxy']['stats_socket_user']` - user for haproxy socket, default is node['haproxy']['user']

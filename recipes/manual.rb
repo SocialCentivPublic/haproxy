@@ -17,7 +17,9 @@
 # limitations under the License.
 #
 
-include_recipe "haproxy::install_#{node['haproxy']['install_method']}"
+conf = node['haproxy']
+
+include_recipe "haproxy::install_#{conf['install_method']}"
 
 cookbook_file "/etc/default/haproxy" do
   source "haproxy-default"
@@ -27,17 +29,41 @@ cookbook_file "/etc/default/haproxy" do
   notifies :restart, "service[haproxy]", :delayed
 end
 
+ssl_string  = ""
+ssl_string << " ssl crt #{ conf['ssl_termination_pem_file'] }" if conf['ssl_termination']
 
-if node['haproxy']['enable_admin']
-  admin = node['haproxy']['admin']
-  haproxy_lb "admin" do
-    bind "#{admin['address_bind']}:#{admin['port']}"
-    mode 'http'
-    params(admin['options'])
+if conf['enable_admin']
+  if conf['enable_default_http']
+    admin = conf['admin']
+    haproxy_lb "admin" do
+      bind "#{admin['address_bind']}:#{admin['port']}"
+      mode 'http'
+      params(admin['options'])
+    end
+
+  elsif conf['enable_ssl'] || conf['ssl_termination']
+
+    haproxy_lb 'admin' do
+      type 'frontend'
+      mode 'http'
+      params({
+        'http-request' => 'add-header X-Proto https if { ssl_fc }',
+        'bind' => "#{conf['ssl_incoming_address']}:#{conf['admin']['port']}#{ ssl_string }",
+        'reqadd' => 'X-Forwarded-Proto:\ https',
+        'default_backend' => "admin"
+      })
+    end
+
+    stats_arr = ['enable', 'hide-version', 'realm Haproxy\ Statistics', "auth #{conf['admin']['username']}:#{conf['admin']['password']}"]
+
+    haproxy_lb "admin" do
+      type 'backend'
+      stats stats_arr
+      params(conf['admin']['options'])
+    end
   end
 end
 
-conf = node['haproxy']
 member_max_conn = conf['member_max_connections']
 member_weight = conf['member_weight']
 
@@ -50,56 +76,58 @@ if conf['enable_default_http']
       'default_backend' => 'servers-http'
     })
   end
-elsif node['haproxy']['enable_ssl'] || node['haproxy']['ssl_termination']
-  ssl_string  = ""
-  ssl_string << " ssl crt #{ node['haproxy']['ssl_termination_pem_file'] }" if node['haproxy']['ssl_termination']
+elsif conf['enable_ssl'] || conf['ssl_termination']
 
   haproxy_lb 'https' do
     type 'frontend'
-    mode 'tcp'
+    mode 'http'
+    bind "#{conf['incoming_address']}:#{conf['incoming_port']}"
     params({
-      'maxconn' => node['haproxy']['frontend_ssl_max_connections'],
-      'bind' => "#{node['haproxy']['ssl_incoming_address']}:#{node['haproxy']['ssl_incoming_port']}#{ ssl_string }",
-      'default_backend' => ('servers-http' + ( 's' unless node['haproxy']['ssl_termination'] ))
+      'redirect' => 'scheme https code 301 if !{ ssl_fc }',
+      'maxconn' => conf['frontend_ssl_max_connections'],
+      'http-request' => 'add-header X-Proto https if { ssl_fc }',
+      'bind' => "#{conf['ssl_incoming_address']}:#{conf['ssl_incoming_port']}#{ ssl_string }",
+      'reqadd' => 'X-Forwarded-Proto:\ https',
+      'default_backend' => "servers-#{conf['mode']}"
     })
   end
 end
 
-if conf['enable_default_http'] || node['haproxy']['ssl_termination']
+if conf['enable_default_http'] || conf['ssl_termination']
   member_port = conf['member_port']
   pool = []
   pool << "option httpchk #{conf['httpchk']}" if conf['httpchk']
-  servers = node['haproxy']['members'].map do |member|
+  servers = conf['members'].map do |member|
     "#{member['hostname']} #{member['ipaddress']}:#{member['port'] || member_port} weight #{member['weight'] || member_weight} maxconn #{member['max_connections'] || member_max_conn} check"
   end
-  haproxy_lb "servers-#{node['haproxy']['mode']}" do
+  haproxy_lb "servers-#{conf['mode']}" do
     type 'backend'
     servers servers
     params pool
   end
 
-elsif node['haproxy']['enable_ssl']
+elsif conf['enable_ssl']
   ssl_member_port = conf['ssl_member_port']
   pool = ['option ssl-hello-chk']
   pool << "option httpchk #{conf['ssl_httpchk']}" if conf['ssl_httpchk']
-  servers = node['haproxy']['members'].map do |member|
+  servers = conf['members'].map do |member|
     "#{member['hostname']} #{member['ipaddress']}:#{member['ssl_port'] || ssl_member_port} weight #{member['weight'] || member_weight} maxconn #{member['max_connections'] || member_max_conn} check"
   end
-  haproxy_lb "servers-#{node['haproxy']['mode']}" do
+  haproxy_lb "servers-#{conf['mode']}" do
     type 'backend'
-    mode node['haproxy']['mode']
+    mode conf['mode']
     servers servers
     params pool
   end
 end
 
 # Re-default user/group to account for role/recipe overrides
-node.default['haproxy']['stats_socket_user'] = node['haproxy']['user']
-node.default['haproxy']['stats_socket_group'] = node['haproxy']['group']
+node.default['haproxy']['stats_socket_user'] = conf['user']
+node.default['haproxy']['stats_socket_group'] = conf['group']
 
 
-unless node['haproxy']['global_options'].is_a?(Hash)
-  Chef::Log.error("Global options needs to be a Hash of the format: { 'option' => 'value' }. Please set node['haproxy']['global_options'] accordingly.")
+unless conf['global_options'].is_a?(Hash)
+  Chef::Log.error("Global options needs to be a Hash of the format: { 'option' => 'value' }. Please set conf['global_options'] accordingly.")
 end
 
 haproxy_config "Create haproxy.cfg" do

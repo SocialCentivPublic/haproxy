@@ -7,6 +7,7 @@ attribute :type, :kind_of => String, :default => 'listen', :equal_to => ['listen
 
 #Defining some attributes, but they can be all nil and defined in params
 #if convenient.
+attribute :stats, :kind_of => Array, :default => []
 attribute :servers, :kind_of => Array, :default => []
 attribute :balance, :kind_of => String
 attribute :bind, :kind_of => String, :default => nil

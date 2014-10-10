@@ -49,10 +49,14 @@ default['haproxy']['ssl_incoming_port'] = 443
 default['haproxy']['ssl_member_port'] = 8443
 default['haproxy']['httpchk'] = nil
 default['haproxy']['ssl_httpchk'] = nil
+
 default['haproxy']['enable_admin'] = true
 default['haproxy']['admin']['address_bind'] = "127.0.0.1"
 default['haproxy']['admin']['port'] = 22002
 default['haproxy']['admin']['options'] = { 'stats' => 'uri /' }
+default['haproxy']['admin']['username'] = 'admin'
+default['haproxy']['admin']['password'] = 'password'
+
 default['haproxy']['enable_stats_socket'] = false
 default['haproxy']['stats_socket_path'] = "/var/run/haproxy.sock"
 default['haproxy']['stats_socket_user'] = node['haproxy']['user']
