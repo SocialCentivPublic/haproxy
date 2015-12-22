@@ -40,7 +40,7 @@ if conf['enable_admin']
     params(admin['options'])
   end
 
-  elsif conf['enable_ssl'] || conf['ssl_termination']
+  if conf['enable_ssl'] || conf['ssl_termination']
 
     haproxy_lb 'admin' do
       type 'frontend'
