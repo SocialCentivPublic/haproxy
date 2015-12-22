@@ -33,13 +33,12 @@ ssl_string  = ""
 ssl_string << " ssl crt #{ conf['ssl_termination_pem_file'] }" if conf['ssl_termination']
 
 if conf['enable_admin']
-  if conf['enable_default_http']
-    admin = conf['admin']
-    haproxy_lb "admin" do
-      bind "#{admin['address_bind']}:#{admin['port']}"
-      mode 'http'
-      params(admin['options'])
-    end
+  admin = conf['admin']
+  haproxy_lb "admin_local" do
+    bind "#{admin['address_bind']}:#{admin['port']}"
+    mode 'http'
+    params(admin['options'])
+  end
 
   elsif conf['enable_ssl'] || conf['ssl_termination']
 
